@@ -22,6 +22,49 @@
 Только нами написанные классы, не массивы и не переменные
 Не требуя прав администратора
 */
+
+int intSetting;
+double dblSetting;
+char strSetting [];
+
+void SettingsCreate()
+{
+	/*
+	варианты:
+		- файла не существует
+		- файл существует, но при чтении произошла ошибка
+	*/
+	FILE* fp = fopen("options.dat", "w"); //текстовый файл открывается для записи. 
+	//Если файл ранее существовал, то он пересоздается и записывается заново
+
+
+	
+}
+
+
+void SettingsRead()
+{
+	FILE* fp;
+	for (;;)
+	{
+		fp = fopen("options.dat", "r"); //текстовый файл открывается для чтения
+		if (fp == NULL)
+		{
+			//добавить сообщение на консоль
+			SettingsCreate();
+			continue;
+		}
+		break;
+	}
+
+
+
+
+	fclose(fp);
+	return 0;
+}
+
 int main() {
-	printf("AVE CAESAR");
+	//printf("AVE CAESAR");
+	ReadSettings();
 }
