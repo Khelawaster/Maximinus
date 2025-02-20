@@ -1,0 +1,8 @@
+;Файл конфигурации программы Maximinus
+;Внимание! Длина любого параметра не должна превышать 128 символов!
+;intSetting
+intSetting=1
+;dblSetting Разделитель целой и дробной частей - запятая.
+dblSetting=0,1
+;strSetting
+strSetting=setting value is 0.1

@@ -56,12 +56,14 @@ int ParseSettingString(char* string, char * name, char * value) {
 
 void SettingsCreate()
 {
-	/*
-	варианты:
-		- файла не существует
-		- файл существует, но при чтении произошла ошибка
-	*/
-	FILE* fp = fopen("options.dat", "w"); //текстовый файл открывается для записи. 
+	const char* filename = "options.dat";
+	FILE* fp = fopen(filename, "r");
+	if (fp)
+	{
+		fclose(fp);
+		rename(filename, "options.bak");
+	}
+	fp = fopen(filename, "w"); //текстовый файл открывается для записи. 
 	//Если файл ранее существовал, то он пересоздается и записывается заново
 	if (fp == NULL)
 	{
@@ -116,6 +118,7 @@ void SettingsRead()
 
 int main() {
 	char* locale = setlocale(LC_ALL, ""); //локализация
+	SettingsCreate();
 	SettingsRead();
 	printf("AVE CAESAR");
 	getchar();
