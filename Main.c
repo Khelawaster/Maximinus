@@ -210,26 +210,53 @@ struct MyList {
 	struct MyList* Next;
 };
 
+void Append(struct MyList* start, int data);
+
+#pragma region Constructors
+
 struct MyList* Create(void) {
-	struct MyList* tmp;
-	tmp = (struct MyList*)malloc(sizeof(struct MyList));
-	tmp->Info = 0;
-	tmp->Next = NULL;
-	return tmp;
+	struct MyList* ret;
+	ret = (struct MyList*)malloc(sizeof(struct MyList));
+	ret->Info = ListElementDefaultInfo;
+	ret->Next = NULL;
+	printf("По адресу %p расположено новое звено. Значение по умолчанию.\n",ret);
+	return ret;
 }
 
-void Append(struct MyList* start, int data) {
-	struct MyList* tmp, * last;
-	tmp = Create();
-	tmp->Info = data;
-	last = start;
-	while (1) {
-		if (last->Next == NULL) break;
-		last = last->Next;
-	}
-	last->Next = tmp;
-	start->Info++;
+struct MyList* CreateWithValue(int value) {
+	struct MyList* ret;
+	ret = Create();
+	ret->Info = value;
+	printf("Установлено значение звена по адресу %p : %d\n", ret , value);
+	return ret;
 }
+
+//это я сам добавил. Генерация списка заданной длины со случайныи значениями.
+struct MyList* CreateWithLengthRandom(int length) {
+	printf("Генерация списка случайных чисел длиной %d\n", length);
+	srand(time(NULL));
+	int max = InfoMaxRandomValue + 1;
+	struct MyList* ret = CreateWithValue(length);
+	for (int i = 0; i < length; i++)
+		Append(ret, rand() % max);
+	printf("Генерация списка завершена\n\n");
+	return ret;
+}
+
+
+//это я сам добавил. Генерация списка заданной длины со значением по умолчанию.
+struct MyList* CreateWithLengthDefault(int length) {
+	printf("Генерация списка чисел длиной %d со значением %в\n", length, ListElementDefaultInfo);
+	struct MyList* ret = CreateWithValue(length);
+	for (int i = 0; i < length; i++)
+		Append(ret, ListElementDefaultInfo);
+	printf("Генерация списка завершена\n\n");
+	return ret;
+}
+#pragma endregion
+
+#pragma region Methods
+
 
 struct MyList* GetAddress(struct MyList* start, int num) {
 	if (num < 1) return start;
@@ -239,20 +266,34 @@ struct MyList* GetAddress(struct MyList* start, int num) {
 	return tmp;
 }
 
-void Remove(struct MyList* start, int num) {
+void Append(struct MyList* start, int data) {
+	struct MyList* tmp, * last;
+	tmp = CreateWithValue(data);
+	last = start;
+	while (1) {
+		if (last->Next == NULL) break;
+		last = last->Next;
+	}
+	last->Next = tmp;
+	start->Info++;
+}
+
+//возвращает значение удалённого элемента. Можно использовать как Pop и Dequeue
+int Remove(struct MyList* start, int num) {
 	struct MyList* before, * out;
 	before = GetAddress(start, num - 1);
 	out = before->Next;
 	before->Next = out->Next;
+	int ret = out->Info;
 	free(out);
 	start->Info--;
+	return ret;
 }
 
 void Insert(struct MyList* start, int num, int data) {
 	struct MyList* before, * new;
 	before = GetAddress(start, num - 1);
-	new = (struct MyList*) malloc(sizeof(struct  MyList));
-	new->Info = data;
+	new = CreateWithValue(data);
 	new->Next = before->Next;
 	before->Next = new;
 	start->Info++;
@@ -279,19 +320,10 @@ void Print(struct MyList* start) {
 	return;
 }
 
-//это я сам добавил. Генерация списка заданной длины со случайныи значениями.
-struct MyList* PopulateRandom(int length) {
-	srand(time(NULL));
-	int max = InfoMaxRandomValue + 1;
-	struct MyList* ret =  Create();
-	for (int i = 0; i < length; i++)
-		Append(ret, rand() % max);
-	return ret;
-}
 //это тоже я добавил. Вытащить элемент списка по номеру.
 struct MyList* GetItem(struct MyList* list, int number) {
 	struct MyList* tmp = list->Next;
-	int i=0;
+	int i = 0;
 	while (tmp->Next != NULL) {
 		if (i == number)
 			return tmp;
@@ -300,10 +332,96 @@ struct MyList* GetItem(struct MyList* list, int number) {
 	return NULL;
 }
 
+/*
+Это методы для работы со связным списком как со стеком
+*/
+
+//void Push он же Enqueue (struct MyList* start, int data) {
+//	без надобности. Для этого есть Append
+//}
+
+//тоже без большой надобности. Обёртки для уже созданного метода Remove
+int Pop(struct MyList* list) {
+	return Remove (list, list->Info);
+}
+int Dequeue(struct MyList* list) {
+	return Remove (list, 1);
+}
+//добавление в начало очереди. Тоже обёртка для Insert
+void EnqueueHead(struct MyList* list, int data) {
+	Insert(list, 1, data);
+}
+
+
+#pragma endregion
+
+// Деструктор: Освобождение памяти списка
+void freeList(struct MyList* start) {
+	printf("Удаление списка %p\n", &start);
+	struct MyList* tmp = start;
+	struct MyList* next;
+	int i=0;
+	while (tmp != NULL) {
+		printf("Удаление звена %d из ячейки %p\n",i, tmp );
+		next = tmp->Next;
+		free(tmp);
+		tmp = next;
+		i++;
+	}
+	start = NULL;
+	printf("%p = %p",&start, start);
+	printf("\nОчистка памяти завершена\n\n");
+}
+
+#pragma endregion
+
+#pragma region Stack
+/*Это структура с эмуляцией методов. Практический смысл в ней есть только если методы у разных экземпляров разные,
+то есть в данном случае его нет. Есть чисто эстетический - выглядит как методы "нормального" объекта*/
+struct MyStack{
+	struct MyList * base;
+	void (*Push) (struct Stack*, int);
+	int (*Pop) (struct Stack*);
+} ;
+
+// Прототип функции push
+void push(struct MyStack* stack, int data);
+int pop(struct MyStack* stack);
+
+struct MyStack* CreateStack() {
+	struct MyList* lst = Create();
+	struct MyStack* ret;
+	ret= (struct MyStack*)malloc(sizeof(struct MyStack));
+	ret->base = lst;
+	ret->Push = push;
+	ret->Pop = pop;
+	return ret;
+}
+
+void push(struct MyStack* stack, int data)
+{
+	Append(stack->base, data);
+}
+int pop(struct MyStack* stack)
+{
+	int lastIndex = (stack->base)->Info;
+	struct MyList* lst = GetAddress(stack->base, lastIndex);
+	int ret = lst->Info;
+	Remove(stack->base, lastIndex);
+	return ret;
+}
+
+
+#pragma endregion
+
+
+
+#pragma region Tasks
+#pragma region Task 1
 void MaximineListByValue(struct MyList* list) {
 	int min = INT_MAX;	int max = INT_MIN;
 	struct MyList* tmp = list->Next; //ищем, начиная с первого элемента
-	while(1) {
+	while (1) {
 		if (tmp->Info <= min)
 			min = tmp->Info;
 		if (tmp->Info >= max)
@@ -317,7 +435,7 @@ void MaximineListByValue(struct MyList* list) {
 	//теперь проходим по второму разу и меняем значения элементов
 	tmp = list->Next;
 	while (tmp->Next != NULL) {
-		if (tmp->Info != min && tmp->Info != max) 
+		if (tmp->Info != min && tmp->Info != max)
 			tmp->Info = Maximinus;
 		tmp = tmp->Next;
 	}
@@ -326,14 +444,13 @@ void MaximineListByValue(struct MyList* list) {
 void MaximineListByPosition(struct MyList* list) {
 	/*min->Info - минимальное значение
 	min->Next - адрес элемента с этим значением*/
-	struct MyList* min = Create();
-	min->Info=INT_MAX;
-	struct MyList* max = Create();
-	max->Info = INT_MIN;
+	printf("Создаём служебные переменные\n");
+	struct MyList* min = CreateWithValue(INT_MAX);
+	struct MyList* max = CreateWithValue(INT_MIN);
 	//проходим первый раз - ищем макс и мин
 	struct MyList* tmp = list->Next;
 	while (1) {
-		if (tmp->Info <= min->Info){
+		if (tmp->Info <= min->Info) {
 			min->Info = tmp->Info;
 			min->Next = tmp;
 		}
@@ -359,18 +476,8 @@ void MaximineListByPosition(struct MyList* list) {
 		tmp = tmp->Next;
 	}
 }
-
-
-
-#pragma endregion
-
-
-int main() 
-{
-	char* locale = setlocale(LC_ALL, ""); //локализация
-	SettingsRead();//чтение конфигурации
-	printf("Генерация списка случайных чисел\n");
-	struct MyList* lst = PopulateRandom(ListDefaultLength);
+void Task1(void) {
+	struct MyList* lst = CreateWithLengthRandom(ListDefaultLength);
 	Print(lst);
 	//MaximineListByValue(lst);
 	MaximineListByPosition(lst);
@@ -378,6 +485,33 @@ int main()
 	//printf("Вариант 1: \"Между\" - это по значению\n");
 	printf("Вариант 2: \"Между\" - это согласно положению\n");
 	Print(lst);
+	freeList(lst);
+}
+
+#pragma endregion
+#pragma endregion
+
+int main() 
+{
+	char* locale = setlocale(LC_ALL, ""); //локализация
+	SettingsRead();//чтение конфигурации
+	//Task1();
+
+	printf("Создание стека\n");
+	struct MyStack* st = CreateStack();
+	st->Push(st, 13);
+	Append(st->base, 26);
+	Append(st->base, 39);
+	EnqueueHead(st->base, 7);
+	Print(st->base);
+
+	int i = Dequeue(st->base);
+	printf("\n%d\n",i);
+	i= st->Pop(st);
+	printf("\n%d\n", i);
+	i = Pop(st->base);
+	printf("\n%d\n",i);
+	Print(st->base);
 	printf("AVECAESARGAIUSIULIUSVERUSMAXIMINUS!");
 	getchar();//даём пользователю прочитать
 }
