@@ -210,7 +210,8 @@ struct MyList {
 	struct MyList* Next;
 };
 
-void Append(struct MyList* start, int data);
+void Append(struct MyList* start, struct MyList* link);
+void Insert(struct MyList* start, int num, int data);
 
 #pragma region Constructors
 
@@ -236,9 +237,9 @@ struct MyList* CreateWithLengthRandom(int length) {
 	printf("Генерация списка случайных чисел длиной %d\n", length);
 	srand(time(NULL));
 	int max = InfoMaxRandomValue + 1;
-	struct MyList* ret = CreateWithValue(length);
-	for (int i = 0; i < length; i++)
-		Append(ret, rand() % max);
+	struct MyList* ret = CreateWithValue(0);
+	for (int i = 1; i <= length; i++)
+		Insert(ret,i, rand() % max);
 	printf("Генерация списка завершена\n\n");
 	return ret;
 }
@@ -248,8 +249,8 @@ struct MyList* CreateWithLengthRandom(int length) {
 struct MyList* CreateWithLengthDefault(int length) {
 	printf("Генерация списка чисел длиной %d со значением %в\n", length, ListElementDefaultInfo);
 	struct MyList* ret = CreateWithValue(length);
-	for (int i = 0; i < length; i++)
-		Append(ret, ListElementDefaultInfo);
+	for (int i = 1; i <= length; i++)
+		Insert(ret,ret->Info, ListElementDefaultInfo);
 	printf("Генерация списка завершена\n\n");
 	return ret;
 }
@@ -266,15 +267,11 @@ struct MyList* GetAddress(struct MyList* start, int num) {
 	return tmp;
 }
 
-void Append(struct MyList* start, int data) {
-	struct MyList* tmp, * last;
-	tmp = CreateWithValue(data);
-	last = start;
-	while (1) {
-		if (last->Next == NULL) break;
-		last = last->Next;
-	}
-	last->Next = tmp;
+void Append(struct MyList* start, struct MyList* link) {
+	//не стоит перебирать, пока Next!=NULL - при быстрой сортировке списка этого может не быть...
+	struct MyList* last;
+	last = GetAddress(start, start->Info);
+	last->Next = link;
 	start->Info++;
 }
 
@@ -320,25 +317,17 @@ void Print(struct MyList* start) {
 	return;
 }
 
-//это тоже я добавил. Вытащить элемент списка по номеру.
-struct MyList* GetItem(struct MyList* list, int number) {
-	struct MyList* tmp = list->Next;
-	int i = 0;
-	while (tmp->Next != NULL) {
-		if (i == number)
-			return tmp;
-		i++;
-	}
-	return NULL;
-}
+
 
 /*
 Это методы для работы со связным списком как со стеком
 */
 
-//void Push он же Enqueue (struct MyList* start, int data) {
-//	без надобности. Для этого есть Append
-//}
+void Push  (struct MyList* start, int data) {
+//	он же Enqueue 
+	Insert(start, start->Info+1, data);
+}
+
 
 //тоже без большой надобности. Обёртки для уже созданного метода Remove
 int Pop(struct MyList* list) {
@@ -351,6 +340,46 @@ int Dequeue(struct MyList* list) {
 void EnqueueHead(struct MyList* list, int data) {
 	Insert(list, 1, data);
 }
+
+#pragma region Sort
+
+void Concat (struct MyList* head, struct MyList* tail) {
+	//сшивает вместе два списка
+	struct MyList* last = GetAddress(head, head->Info);
+	last->Next = tail->Next;
+	head->Info += tail->Info;
+	last= GetAddress(head, head->Info);
+	last->Next = NULL;
+	free(tail);
+}
+
+struct MyList* QuickSort(struct MyList* list) {
+	//используем рекурсивный алгортим быстрой сортировки
+	if (list->Info < 2)
+		return list; //базовый случай
+	else {
+		struct MyList* pivot = list->Next; // первый элемент - опорный
+		struct MyList* head = Create(); // сюда всё, что меньше опорного
+		struct MyList* tail = Create(); // сюда всё, что больше
+		struct MyList* tmp = pivot->Next; // перебираем все элементы, раскладывая их по спискам
+		for (int i = 0; i < list->Info-1; i++) {
+			if (tmp->Info <= pivot->Info)
+				Append(head, tmp);
+			else
+				Append(tail, tmp);
+			tmp = tmp->Next;
+		}
+		Append(head, pivot);//опорный - в "голову"
+		Concat(QuickSort(head), QuickSort(tail)); //рекурсия - функция вызывает сама себя для "головы" и "хвоста"
+		//это будет продолжаться, пока в них не останется по одному элементу (будет достигнут базовый случай)
+		list->Next = head->Next;//мы возвращаем исходный список
+		free(head);//"хвост" уже освобождён функцией Concat
+		return list;
+	}
+
+}
+
+#pragma endregion
 
 
 #pragma endregion
@@ -400,7 +429,7 @@ struct MyStack* CreateStack() {
 
 void push(struct MyStack* stack, int data)
 {
-	Append(stack->base, data);
+	Insert(stack->base, stack->base->Info, data);
 }
 int pop(struct MyStack* stack)
 {
@@ -489,6 +518,37 @@ void Task1(void) {
 }
 
 #pragma endregion
+
+#pragma region StackAndQueue
+void StackAndQueue () {
+	printf("Создание стека\n");
+	struct MyStack* st = CreateStack();
+	st->Push(st, 13);
+	Push(st->base, 26);
+	Push(st->base, 39);
+	EnqueueHead(st->base, 7);
+	Print(st->base);
+	Append(st->base, CreateWithValue(666));
+
+
+	int i = Dequeue(st->base);
+	printf("\n%d\n",i);
+	i = st->Pop(st);
+	printf("\n%d\n", i);
+	i = Pop(st->base);
+	printf("\n%d\n",i);
+	Print(st->base);
+}
+
+
+#pragma endregion
+
+void Sort() {
+	struct MyList* lst = CreateWithLengthRandom(13);
+	Print(lst);
+	QuickSort(lst);
+	Print(lst);
+}
 #pragma endregion
 
 int main() 
@@ -496,22 +556,8 @@ int main()
 	char* locale = setlocale(LC_ALL, ""); //локализация
 	SettingsRead();//чтение конфигурации
 	//Task1();
-
-	printf("Создание стека\n");
-	struct MyStack* st = CreateStack();
-	st->Push(st, 13);
-	Append(st->base, 26);
-	Append(st->base, 39);
-	EnqueueHead(st->base, 7);
-	Print(st->base);
-
-	int i = Dequeue(st->base);
-	printf("\n%d\n",i);
-	i= st->Pop(st);
-	printf("\n%d\n", i);
-	i = Pop(st->base);
-	printf("\n%d\n",i);
-	Print(st->base);
+	//StackAndQueue();
+	Sort();
 	printf("AVECAESARGAIUSIULIUSVERUSMAXIMINUS!");
 	getchar();//даём пользователю прочитать
 }
