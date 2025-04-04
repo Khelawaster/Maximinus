@@ -21,9 +21,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="options.dat" />
+    <None Include="6conf.cfg" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Settings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MyFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MyList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

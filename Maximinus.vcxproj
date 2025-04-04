@@ -130,9 +130,12 @@
     <ClCompile Include="Main.c" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="6conf.cfg" />
     <None Include="options.dat" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MyFunctions.h" />
+    <ClInclude Include="MyList.h" />
     <ClInclude Include="Settings.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
